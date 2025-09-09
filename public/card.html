@@ -6,121 +6,73 @@
     <title>Contact Card - Whispr</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
             padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: #f5f5f5;
         }
-        
-        .card {
+        .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 400px;
-            width: 100%;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
-        
-        .name {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .title {
-            font-size: 18px;
-            color: #7f8c8d;
-            margin-bottom: 8px;
-        }
-        
-        .company {
-            font-size: 16px;
-            color: #95a5a6;
             margin-bottom: 30px;
         }
-        
-        .contact-info {
-            text-align: left;
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
+        .contact-group {
+            margin-bottom: 20px;
         }
-        
-        .contact-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            font-size: 16px;
+        .contact-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
         }
-        
-        .contact-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .icon {
-            width: 20px;
-            height: 20px;
-            margin-right: 15px;
-            opacity: 0.7;
-        }
-        
         .contact-value {
-            color: #2c3e50;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            background: #f9f9f9;
+            color: #333;
             text-decoration: none;
+            display: block;
         }
-        
         .contact-value:hover {
-            color: #667eea;
+            background: #f0f0f0;
         }
-        
         .footer {
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #ecf0f1;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
             font-size: 14px;
-            color: #95a5a6;
         }
-        
         .expires {
             background: #fff3cd;
             color: #856404;
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 5px;
             margin-top: 15px;
-            font-size: 13px;
+            text-align: center;
         }
-        
         .loading {
             text-align: center;
             padding: 40px;
-            color: white;
+            color: #666;
             font-size: 18px;
         }
-        
         .error {
             background: #f8d7da;
             color: #721c24;
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 5px;
             text-align: center;
         }
     </style>
@@ -131,26 +83,37 @@
     </div>
     
     <div id="cardContainer" style="display: none;">
-        <div class="card">
-            <div class="name" id="cardName"></div>
-            <div class="title" id="cardTitle"></div>
-            <div class="company" id="cardCompany"></div>
+        <div class="container">
+            <h1 id="cardName"></h1>
+
+            <div class="contact-group" id="titleGroup" style="display: none;">
+                <label class="contact-label">Title</label>
+                <div class="contact-value" id="cardTitle"></div>
+            </div>
+
+            <div class="contact-group" id="functionGroup" style="display: none;">
+                <label class="contact-label">Function</label>
+                <div class="contact-value" id="cardFunction"></div>
+            </div>
+
+            <div class="contact-group" id="companyGroup" style="display: none;">
+                <label class="contact-label">Company</label>
+                <div class="contact-value" id="cardCompany"></div>
+            </div>
+
+            <div class="contact-group" id="addressGroup" style="display: none;">
+                <label class="contact-label">Address</label>
+                <div class="contact-value" id="cardAddress"></div>
+            </div>
             
-            <div class="contact-info">
-                <div class="contact-item" id="emailItem" style="display: none;">
-                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
-                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
-                    </svg>
-                    <a href="" class="contact-value" id="cardEmail"></a>
-                </div>
-                
-                <div class="contact-item" id="phoneItem" style="display: none;">
-                    <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
-                    </svg>
-                    <a href="" class="contact-value" id="cardPhone"></a>
-                </div>
+            <div class="contact-group" id="emailGroup" style="display: none;">
+                <label class="contact-label">Email</label>
+                <a href="" class="contact-value" id="cardEmail"></a>
+            </div>
+            
+            <div class="contact-group" id="phoneGroup" style="display: none;">
+                <label class="contact-label">Phone</label>
+                <a href="" class="contact-value" id="cardPhone"></a>
             </div>
             
             <div class="footer">
@@ -158,12 +121,18 @@
                 <div class="expires">
                     ⏰ This card expires on <span id="expiresAt"></span>
                 </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <a id="downloadBtn" href="#" style="background: #007cba; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block;">
+                        📱 Save to Phone
+                    </a>
+                </div>
             </div>
+
         </div>
     </div>
     
     <div id="errorContainer" style="display: none;">
-        <div class="card">
+        <div class="container">
             <div class="error">
                 <h3>Card Not Found</h3>
                 <p id="errorMessage"></p>
@@ -172,7 +141,6 @@
     </div>
 
     <script>
-        // Get card ID from URL
         const urlParams = new URLSearchParams(window.location.search);
         const cardId = urlParams.get('id');
         
@@ -200,33 +168,59 @@
         }
         
         function displayCard(card) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('cardContainer').style.display = 'block';
-            
-            document.getElementById('cardName').textContent = card.name;
-            document.getElementById('cardTitle').textContent = card.title || '';
-            document.getElementById('cardCompany').textContent = card.company || '';
-            document.getElementById('accessCount').textContent = card.access_count;
-            
-            // Format expiry date
-            const expiryDate = new Date(card.expires_at).toLocaleString();
-            document.getElementById('expiresAt').textContent = expiryDate;
-            
-            // Show email if present
-            if (card.email) {
-                document.getElementById('cardEmail').textContent = card.email;
-                document.getElementById('cardEmail').href = `mailto:${card.email}`;
-                document.getElementById('emailItem').style.display = 'flex';
-            }
-            
-            // Show phone if present
-            if (card.phone) {
-                document.getElementById('cardPhone').textContent = card.phone;
-                document.getElementById('cardPhone').href = `tel:${card.phone}`;
-                document.getElementById('phoneItem').style.display = 'flex';
-            }
-        }
-        
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('cardContainer').style.display = 'block';
+    
+    document.getElementById('cardName').textContent = card.fullName;
+    document.getElementById('accessCount').textContent = card.access_count;
+    
+    // Format expiry date
+    const expiryDate = new Date(card.expires_at).toLocaleString();
+    document.getElementById('expiresAt').textContent = expiryDate;
+    
+    // Show title if present
+    if (card.title) {
+        document.getElementById('cardTitle').textContent = card.title;
+        document.getElementById('titleGroup').style.display = 'block';
+    }
+    
+    // Show function if present
+    if (card.function) {
+        document.getElementById('cardFunction').textContent = card.function;
+        document.getElementById('functionGroup').style.display = 'block';
+    }
+    
+    // Show company if present
+    if (card.company) {
+        document.getElementById('cardCompany').textContent = card.company;
+        document.getElementById('companyGroup').style.display = 'block';
+    }
+    
+    // Show address if present
+    if (card.address) {
+        document.getElementById('cardAddress').textContent = card.address;
+        document.getElementById('addressGroup').style.display = 'block';
+    }
+    
+    // Show email if present
+    if (card.email) {
+        document.getElementById('cardEmail').textContent = card.email;
+        document.getElementById('cardEmail').href = `mailto:${card.email}`;
+        document.getElementById('emailGroup').style.display = 'block';
+    }
+    
+    // Show phone if present
+    if (card.phone) {
+        document.getElementById('cardPhone').textContent = card.phone;
+        document.getElementById('cardPhone').href = `tel:${card.phone}`;
+        document.getElementById('phoneGroup').style.display = 'block';
+    }
+
+    // Set download link
+    const downloadUrl = `/vcard/${cardId}`;
+    document.getElementById('downloadBtn').href = downloadUrl;
+}
+
         function showError(message) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('errorContainer').style.display = 'block';
