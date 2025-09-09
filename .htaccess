@@ -1,0 +1,348 @@
+# ===================================================================
+# WHISPR CARDS - SECURITY HARDENED .HTACCESS
+# Version: 1.1.0 - Clean Security (No Geographic Discrimination)
+# ===================================================================
+
+# Enable rewrite engine
+RewriteEngine On
+Options -Indexes
+
+# ===================================================================
+# HTTPS ENFORCEMENT & SECURITY HEADERS
+# ===================================================================
+
+# Force HTTPS redirect
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Security Headers
+<IfModule mod_headers.c>
+    # HSTS - Force HTTPS for 1 year including subdomains
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Prevent XSS attacks
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Prevent clickjacking
+    Header always set X-Frame-Options "DENY"
+    
+    # Referrer Policy - only send referrer to same origin
+    Header always set Referrer-Policy "same-origin"
+    
+    # Content Security Policy - Maximum security
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    
+    # Permissions Policy (formerly Feature Policy)
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), speaker=(), vibrate=(), fullscreen=(self)"
+    
+    # Remove server information
+    Header always unset Server
+    Header always unset X-Powered-By
+    
+    # Cache control for security sensitive files
+    <FilesMatch "\.(htaccess|htpasswd|ini|log|sh|sql)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+</IfModule>
+
+# ===================================================================
+# FILE ACCESS PROTECTION
+# ===================================================================
+
+# Block access to sensitive files
+<FilesMatch "^(\.htaccess|\.htpasswd|\.env|package\.json|server\.js|\.git.*|.*\.md|.*\.log)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Block access to Node.js files in root
+<FilesMatch "^(server|database|scripts)">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Allow specific static files
+<FilesMatch "\.(html|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Block access to directories
+Options -Indexes -MultiViews
+
+# Protect sensitive directories
+<Directory "database">
+    Order Allow,Deny
+    Deny from all
+</Directory>
+
+<Directory "scripts">
+    Order Allow,Deny
+    Deny from all
+</Directory>
+
+<Directory "node_modules">
+    Order Allow,Deny
+    Deny from all
+</Directory>
+
+<Directory "logs">
+    Order Allow,Deny
+    Deny from all
+</Directory>
+
+# ===================================================================
+# BEHAVIORAL ATTACK DETECTION (Not Geographic)
+# ===================================================================
+
+# Block common exploit patterns in query strings
+RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2}) [OR]
+RewriteCond %{QUERY_STRING} \.\./\.\./\.\./\.\./\.\./\.\./\.\./\.\./\.\./\.\./\.\./\.\./ [OR]
+RewriteCond %{QUERY_STRING} ^.*(\[|\]|\(|\)|<|>|ê|"|;|\?|\*|=$).* [OR]
+RewriteCond %{QUERY_STRING} ^.*("|'|<|>|\||`).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(%0A|%0D|%27|%3C|%3E|%00).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(globals|encode|localhost|loopback).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(select|union|delete|insert|drop|create|alter|exec|execute).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(script|javascript|vbscript|onload|onerror|onclick).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(eval|setTimeout|setInterval|Function|base64_decode).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(wget|curl|lynx|links|fetch|perl|python|php|ruby|bash).* [OR]
+RewriteCond %{QUERY_STRING} ^.*(cmd|command|exec|system|shell|proc|passwd|shadow).*
+RewriteRule ^(.*)$ - [F,L]
+
+# Block suspicious user agents (behavioral, not geographic)
+RewriteCond %{HTTP_USER_AGENT} ^$ [OR]
+RewriteCond %{HTTP_USER_AGENT} ^(-|\.|\s) [OR]
+RewriteCond %{HTTP_USER_AGENT} (libwww|lwp-trivial|wget|python|nikto|curl|scan|java|winhttp|clshttp|loader) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (;|<|>|'|"|\)|\(|%0A|%0D|%27|%3C|%3E|%00) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (sqlmap|havij|pangolin|nessus|nikto|fimap|netsparker|burp|acunetix) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (masscan|zmap|nmap|openvas|metasploit|hydra|medusa) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (bot.*bot|crawler.*crawler|spider.*spider|scraper.*scraper) [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# Block suspicious referers (spam/malicious behavior)
+RewriteCond %{HTTP_REFERER} (;|<|>|'|"|\)|\(|%0A|%0D|%27|%3C|%3E|%00) [NC,OR]
+RewriteCond %{HTTP_REFERER} ([a-z0-9]{2000,}) [NC,OR]
+RewriteCond %{HTTP_REFERER} (semalt\.com|kambasoft\.com|savetubevideo\.com|buttons-for-website\.com|sharebutton\.net|soundfrost\.org|casino|porn|viagra|pharmacy) [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# Block common attack patterns in URI
+RewriteCond %{REQUEST_URI} (admin|administrator|wp-admin|login|phpmyadmin|config|setup|install|backup) [NC,OR]
+RewriteCond %{REQUEST_URI} (cmd|command|exec|shell|system|eval|base64|passwd|shadow) [NC,OR]
+RewriteCond %{REQUEST_URI} (select|union|insert|update|delete|drop|create|alter|truncate) [NC,OR]
+RewriteCond %{REQUEST_URI} (script|javascript|vbscript|onload|onerror|onclick|iframe|object|embed) [NC,OR]
+RewriteCond %{REQUEST_URI} (\/\.|\.\/|\.\.\/|%2e%2e%2f|%252e%252e%252f|%c0%af|%c1%9c) [NC,OR]
+RewriteCond %{REQUEST_URI} (proc\/|etc\/|bin\/|usr\/|var\/|tmp\/|boot\.ini|win\.ini) [NC,OR]
+RewriteCond %{REQUEST_URI} (\/null|\0|%00|%0a|%0d|%27|%3c|%3e|%253c|%253e) [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# ===================================================================
+# RATE LIMITING & DDoS PROTECTION
+# ===================================================================
+
+# Limit request methods to safe ones
+RewriteCond %{REQUEST_METHOD} !^(GET|POST|HEAD|OPTIONS)$ [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# Block requests with overly large payloads
+LimitRequestBody 51200
+
+# Block excessively long URLs
+<If "%{REQUEST_URI} =~ /^.{2048,}/">
+    Require all denied
+</If>
+
+# Block requests with too many parameters
+<If "%{QUERY_STRING} =~ /(&.*){50,}/">
+    Require all denied
+</If>
+
+# ===================================================================
+# AUTOMATED TOOL & SCANNER DETECTION
+# ===================================================================
+
+# Block security scanners and penetration testing tools
+RewriteCond %{HTTP_USER_AGENT} (nessus|nikto|wikto|sf|sqlmap|bsqlbf|w3af|acunetix|havij|appscan) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (netsparker|burpsuite|owasp|zaproxy|openvas|vega|wapiti|skipfish) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (gobuster|dirb|dirbuster|wfuzz|ffuf|feroxbuster|rustbuster) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (masscan|zmap|nmap|unicornscan|hping|metasploit|armitage) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (sqlninja|bbqsql|nosqlmap|commix|xsser|brutexss|xsstrike) [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# Block malicious crawlers and scrapers (behavior-based)
+RewriteCond %{HTTP_USER_AGENT} (semrushbot|ahrefsbot|mj12bot|dotbot|blexbot|scrapy|mechanize) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (searchmetricsbot|linkpadbot|paperlibot|megaindex|voilabot) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (becomebot|wisenutbot|cazoodlebot|careerbot|simplyfast) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} (spbot|blekkobot|ezooms|ia_archiver|scrapbot|extract|libwww) [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# ===================================================================
+# CONTENT-BASED FILTERING
+# ===================================================================
+
+# Block requests containing suspicious keywords
+RewriteCond %{THE_REQUEST} \s.*(select.*from|union.*select|insert.*into|update.*set|delete.*from) [NC,OR]
+RewriteCond %{THE_REQUEST} \s.*(drop.*table|create.*table|alter.*table|truncate.*table) [NC,OR]
+RewriteCond %{THE_REQUEST} \s.*(exec.*|system.*|shell.*|cmd.*|powershell.*|bash.*) [NC,OR]
+RewriteCond %{THE_REQUEST} \s.*(base64|eval|assert|file_get_contents|readfile|fopen) [NC,OR]
+RewriteCond %{THE_REQUEST} \s.*(\.\.\/|\.\.\\|%2e%2e%2f|%2e%2e%5c|path=\.\.|dir=\.\./) [NC]
+RewriteRule ^(.*)$ - [F,L]
+
+# ===================================================================
+# SPECIFIC IP BLOCKING (Evidence-Based Only)
+# ===================================================================
+
+# Block only confirmed malicious IPs (update based on actual attack logs)
+# Example format - replace with real threat intelligence
+# Deny from 192.0.2.1
+# Deny from 198.51.100.1
+# Deny from 203.0.113.1
+
+# Note: Add IPs here only after they've been confirmed as attackers
+# Remove this section if you prefer purely behavioral detection
+
+# ===================================================================
+# NODE.JS APPLICATION ROUTING
+# ===================================================================
+
+# Route requests to Node.js app (except static files)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/(favicon\.ico|robots\.txt|sitemap\.xml|\.well-known)
+RewriteRule ^(.*)$ /server.js [L,QSA]
+
+# ===================================================================
+# COMPRESSION & PERFORMANCE
+# ===================================================================
+
+# Enable compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+    
+    # Don't compress images and videos
+    SetEnvIfNoCase Request_URI \
+        \.(?:gif|jpe?g|png|ico|mp4|webm|avi|mov)$ no-gzip dont-vary
+</IfModule>
+
+# Cache static files for performance
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/ico "access plus 1 month"
+    ExpiresByType font/woff "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 month"
+    ExpiresByType application/font-woff "access plus 1 month"
+    ExpiresByType application/font-woff2 "access plus 1 month"
+</IfModule>
+
+# ===================================================================
+# ERROR HANDLING
+# ===================================================================
+
+# Custom error pages (prevent information disclosure)
+ErrorDocument 400 "Bad Request"
+ErrorDocument 401 "Unauthorized"
+ErrorDocument 403 "Access Denied"
+ErrorDocument 404 "Page Not Found"
+ErrorDocument 429 "Too Many Requests"
+ErrorDocument 500 "Server Error"
+ErrorDocument 502 "Bad Gateway"
+ErrorDocument 503 "Service Unavailable"
+
+# ===================================================================
+# LOGGING & MONITORING
+# ===================================================================
+
+# Enhanced log format for security analysis
+LogFormat "%h %l %u %t \"%r\" %>s %O \"%{Referer}i\" \"%{User-Agent}i\" %D" security
+
+# Log security events to custom file (if supported)
+<IfModule mod_log_config.c>
+    CustomLog logs/security.log security env=!no_log
+</IfModule>
+
+# ===================================================================
+# ADDITIONAL SECURITY MEASURES
+# ===================================================================
+
+# Disable server signature
+ServerSignature Off
+
+# Block XML-RPC and similar endpoints
+<Files "xmlrpc.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "wp-login.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Prevent execution of scripts in upload directories
+<Directory "uploads">
+    Options -ExecCGI
+    AddHandler cgi-script .php .pl .py .jsp .asp .sh .cgi
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php6
+</Directory>
+
+# Block access to version control directories
+<DirectoryMatch "\.git">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+<DirectoryMatch "\.svn">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+<DirectoryMatch "\.hg">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+# ===================================================================
+# CONTENT VALIDATION
+# ===================================================================
+
+# Validate content types for uploads (if enabled)
+<If "%{CONTENT_TYPE} =~ /^application\/x-php/">
+    Require all denied
+</If>
+
+<If "%{CONTENT_TYPE} =~ /^text\/x-php/">
+    Require all denied
+</If>
+
+# ===================================================================
+# FAIR SECURITY NOTICE
+# ===================================================================
+# This configuration focuses on behavioral security patterns
+# rather than geographic discrimination. All visitors are 
+# welcome regardless of their location. Security measures
+# target malicious behavior, not nationality or geography.
+# ===================================================================
